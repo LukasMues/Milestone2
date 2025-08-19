@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config-lm
+  namespace: lm-webstack
+data:
+  POSTGRES_DB: milestone2
+  POSTGRES_HOST: postgres-lm
+  POSTGRES_PORT: "5432" 

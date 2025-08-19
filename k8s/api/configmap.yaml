@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config-lm
+  namespace: lm-webstack
+data:
+  DATABASE_URL: "postgresql://postgres:password123@postgres-lm:5432/milestone2"
+  DATABASE_HOST: "postgres-lm"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "milestone2"
+  DATABASE_USER: "postgres"
+  DATABASE_PASSWORD: "password123" 

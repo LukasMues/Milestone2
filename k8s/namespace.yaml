@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lm-webstack
+  labels:
+    name: lm-webstack
+    project: milestone2 
