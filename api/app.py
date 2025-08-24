@@ -12,23 +12,23 @@ import time
 # Initialize FastAPI app
 app = FastAPI(title="Milestone 2 API", version="1.0.0")
 
-# Prometheus metrics
+# Prometheus metrics for monitoring
 REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'status'])
 REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency', ['method', 'endpoint'])
 USER_OPERATIONS = Counter('user_operations_total', 'Total user operations', ['operation'])
 
-# Pydantic model for user data
+# Pydantic model for user data validation
 class UserUpdate(BaseModel):
     name: str
 
-# Middleware for metrics
+# Middleware for automatic metrics collection
 class MetricsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
-        start_time = time.time()
+        start_time = time.time()  # Start timing the request
         
         response = await call_next(request)
         
-        duration = time.time() - start_time
+        duration = time.time() - start_time  # Calculate request duration
         REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(duration)
         REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status=response.status_code).inc()
         
@@ -46,7 +46,7 @@ async def startup_event():
     
     while retry_count < max_retries:
         try:
-            init_database()
+            init_database()  # Initialize database connection
             print("Database initialized successfully")
             break
         except Exception as e:
@@ -71,7 +71,7 @@ async def health_check():
 async def get_user():
     """Get current user name from database."""
     try:
-        name = get_user_name()
+        name = get_user_name()  # Retrieve user name from database
         USER_OPERATIONS.labels(operation="get_user").inc()
         return {"name": name}
     except Exception as e:
@@ -82,7 +82,7 @@ async def get_user():
 async def update_user(user_data: UserUpdate):
     """Update user name in database."""
     try:
-        update_user_name(user_data.name)
+        update_user_name(user_data.name)  # Update user name in database
         USER_OPERATIONS.labels(operation="update_user").inc()
         return {"message": "User name updated successfully", "name": user_data.name}
     except Exception as e:
@@ -92,15 +92,15 @@ async def update_user(user_data: UserUpdate):
 @app.get("/container-id")
 async def get_container_id():
     """Get container ID/hostname."""
-    hostname = socket.gethostname()
+    hostname = socket.gethostname()  # Get container hostname
     return {"container_id": hostname}
 
 @app.get("/node-info")
 async def get_node_info():
     """Get node and pod information."""
     hostname = socket.gethostname()
-    pod_name = os.getenv('HOSTNAME', hostname)
-    node_name = os.getenv('NODE_NAME', 'unknown')
+    pod_name = os.getenv('HOSTNAME', hostname)  # Get pod name from Kubernetes
+    node_name = os.getenv('NODE_NAME', 'unknown')  # Get node name from Kubernetes
     
     return {
         "container_id": hostname,
@@ -111,8 +111,8 @@ async def get_node_info():
 @app.get("/metrics")
 async def get_metrics():
     """Get Prometheus metrics."""
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)  # Expose metrics for Prometheus
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)  # Start the server 

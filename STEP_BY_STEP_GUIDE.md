@@ -3433,6 +3433,26 @@ Let's examine the main deployment script:
 
 ### Main Deployment Script (`run.ps1`)
 
+**What the script does and why it's useful:**
+
+The `run.ps1` script is a comprehensive automation tool that transforms a complex multi-step deployment process into simple, single-command operations. Here's why it's incredibly useful:
+
+1. **Complete Lifecycle Management:** Instead of remembering and typing dozens of commands, you can use simple commands like `.\run.ps1 all` to deploy everything from scratch, or `.\run.ps1 clean` to remove everything.
+
+2. **Error Prevention:** The script handles the correct order of operations automatically. For example, it ensures Docker images are built before being loaded into the cluster, and that the cluster exists before trying to deploy applications.
+
+3. **Consistent Environment:** Every time you run the script, it creates the same environment with the same configuration, eliminating "it works on my machine" problems.
+
+4. **Development Efficiency:** During development, you can quickly restart the entire stack with `.\run.ps1 all`, or just rebuild images with `.\run.ps1 build`, saving significant time.
+
+5. **Access Management:** The script provides easy access to all services through port forwarding, so you don't need to remember complex kubectl port-forward commands.
+
+6. **Status Monitoring:** Built-in status checking helps you quickly see if everything is running correctly.
+
+7. **Cleanup Automation:** When you're done, a single command cleans up all resources, preventing resource leaks and conflicts.
+
+**Script Structure:**
+
 ```powershell
 # Simple project runner for Milestone 2
 param([string]$action = "help")
@@ -4270,3 +4290,255 @@ This complete walkthrough demonstrates:
 9. **Cleanup**: Proper resource cleanup when done
 
 The application is now fully functional and demonstrates modern containerized application deployment practices with Kubernetes.
+
+---
+
+## 🔧 **Extra: Monitoring and Load Balancing Configuration**
+
+This section explains how monitoring and load balancing are configured in the application, providing deeper insights into the production-ready features.
+
+### **Monitoring Configuration (Prometheus)**
+
+#### **1. Prometheus Deployment Setup**
+
+The monitoring system uses **Prometheus** to collect metrics from all application components:
+
+```yaml
+# k8s/monitoring/prometheus-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  replicas: 1
+  containers:
+  - name: prometheus
+    image: prom/prometheus:latest
+    args:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=200h'
+    ports:
+    - containerPort: 9090
+```
+
+**Key Configuration Points**:
+- **Namespace**: Runs in separate `monitoring` namespace for isolation
+- **Storage**: Uses persistent volume for data retention (200 hours)
+- **Access**: RBAC permissions to scrape Kubernetes pods
+- **Health Checks**: Built-in liveness and readiness probes
+
+#### **2. Prometheus Configuration**
+
+The Prometheus configuration defines what metrics to collect:
+
+```yaml
+# k8s/monitoring/prometheus-configmap.yaml
+scrape_configs:
+  # API Application Metrics
+  - job_name: 'api-lm'
+    kubernetes_sd_configs:
+      - role: pod
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: api-lm
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        action: keep
+        regex: 8000
+```
+
+**How It Works**:
+- **Service Discovery**: Automatically discovers pods with `app=api-lm` label
+- **Metrics Endpoint**: Scrapes `/metrics` endpoint every 15 seconds
+- **Labeling**: Adds Kubernetes metadata (namespace, pod name, container)
+- **Filtering**: Only targets pods running on port 8000
+
+#### **3. Application Metrics Integration**
+
+The API application exposes metrics through FastAPI middleware:
+
+```python
+# api/app.py
+from prometheus_client import Counter, Histogram
+
+# Metrics definitions
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', 
+                       ['method', 'endpoint', 'status'])
+REQUEST_LATENCY = Histogram('http_request_duration_seconds', 
+                           'HTTP request latency', ['method', 'endpoint'])
+
+# Middleware for automatic metrics collection
+class MetricsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        duration = time.time() - start_time
+        
+        # Record metrics
+        REQUEST_LATENCY.labels(method=request.method, 
+                              endpoint=request.url.path).observe(duration)
+        REQUEST_COUNT.labels(method=request.method, 
+                            endpoint=request.url.path, 
+                            status=response.status_code).inc()
+        return response
+```
+
+**Metrics Collected**:
+- **Request Count**: Total requests by method, endpoint, and status code
+- **Request Latency**: Response time distribution
+- **User Operations**: Business logic metrics (get/update user)
+
+### **Load Balancing Configuration**
+
+#### **1. Kubernetes Service Load Balancing**
+
+Load balancing is handled automatically by Kubernetes services:
+
+```yaml
+# k8s/api/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-lm
+spec:
+  replicas: 3  # Multiple instances for load balancing
+  template:
+    metadata:
+      labels:
+        app: api-lm  # Service selector target
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-lm
+spec:
+  selector:
+    app: api-lm  # Routes traffic to pods with this label
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+```
+
+**Load Balancing Features**:
+- **Multiple Replicas**: 3 API instances for redundancy and performance
+- **Automatic Distribution**: Kubernetes distributes requests across all healthy pods
+- **Health Checks**: Only healthy pods receive traffic
+- **Service Discovery**: Other services can find API pods via service name
+
+#### **2. NGINX Frontend Load Balancing**
+
+The frontend NGINX configuration includes load balancing to the API:
+
+```nginx
+# frontend/nginx.conf
+upstream api_backend {
+    server api-lm:8000;  # Kubernetes service name
+}
+
+server {
+    location /api/ {
+        proxy_pass http://api_backend/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+**How It Works**:
+- **Upstream Definition**: Defines API backend using Kubernetes service
+- **Automatic Load Balancing**: NGINX distributes requests across API pods
+- **Header Forwarding**: Preserves client information
+- **Health Monitoring**: Only forwards to healthy API instances
+
+#### **3. Container-Level Load Balancing**
+
+Each component has built-in load balancing capabilities:
+
+**API Application**:
+```python
+# Health check endpoint for load balancer
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+```
+
+**Database Connection Pooling**:
+```python
+# db.py - Connection management
+@contextmanager
+def get_db_connection():
+    conn = psycopg2.connect(...)  # Connection pooling
+    try:
+        yield conn
+    finally:
+        conn.close()
+```
+
+### **Monitoring and Load Balancing Benefits**
+
+#### **1. High Availability**
+- **Redundancy**: Multiple API instances prevent single points of failure
+- **Health Checks**: Automatic removal of unhealthy instances
+- **Graceful Degradation**: Application continues working even if some components fail
+
+#### **2. Performance Optimization**
+- **Request Distribution**: Load spread across multiple instances
+- **Response Time**: Reduced latency through parallel processing
+- **Resource Utilization**: Better CPU and memory usage
+
+#### **3. Observability**
+- **Real-time Metrics**: Live monitoring of application performance
+- **Troubleshooting**: Detailed metrics for debugging issues
+- **Capacity Planning**: Data for scaling decisions
+
+#### **4. Production Readiness**
+- **Auto-scaling**: Easy to scale up/down based on demand
+- **Rolling Updates**: Zero-downtime deployments
+- **Disaster Recovery**: Quick recovery from failures
+
+### **Accessing Monitoring Data**
+
+#### **1. Prometheus Dashboard**
+```powershell
+# Access Prometheus UI
+.\run.ps1 access-prometheus
+# Then visit: http://localhost:9090
+```
+
+**Available Metrics**:
+- `http_requests_total` - Total API requests
+- `http_request_duration_seconds` - Response times
+- `user_operations_total` - User management operations
+
+#### **2. Load Balancing Verification**
+```powershell
+# Check API pod distribution
+kubectl get pods -n lm-webstack -l app=api-lm -o wide
+
+# Test load balancing
+for ($i=1; $i -le 10; $i++) {
+    curl http://localhost:8000/container-id
+}
+```
+
+**Expected Results**:
+- Multiple API pods running on different nodes
+- Requests distributed across different container IDs
+- Consistent response times
+
+### **Configuration Files Summary**
+
+| File | Purpose | Key Features |
+|------|---------|--------------|
+| `k8s/monitoring/prometheus-deployment.yaml` | Prometheus server deployment | RBAC, persistent storage, health checks |
+| `k8s/monitoring/prometheus-configmap.yaml` | Prometheus configuration | Service discovery, metrics collection |
+| `k8s/api/deployment.yaml` | API deployment | Multiple replicas, health checks, metrics annotations |
+| `frontend/nginx.conf` | Frontend configuration | API load balancing, proxy settings |
+| `api/app.py` | Application metrics | Prometheus integration, middleware |
+
+This monitoring and load balancing setup provides a production-ready foundation that can handle real-world traffic, provide visibility into application performance, and ensure high availability.
