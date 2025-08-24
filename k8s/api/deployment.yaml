@@ -7,7 +7,7 @@ metadata:
     app: api-lm
     project: milestone2
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: api-lm
@@ -15,6 +15,10 @@ spec:
     metadata:
       labels:
         app: api-lm
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: api
@@ -53,6 +57,14 @@ spec:
             configMapKeyRef:
               name: api-config-lm
               key: DATABASE_PASSWORD
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         resources:
           requests:
             memory: "128Mi"

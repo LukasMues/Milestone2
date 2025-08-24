@@ -12,6 +12,7 @@
 9. [Deployment Automation](#deployment-automation)
 10. [Testing and Verification](#testing-and-verification)
 11. [Troubleshooting](#troubleshooting)
+12. [Complete Setup Walkthrough](#complete-setup-walkthrough)
 
 ## Project Overview
 
@@ -955,16 +956,499 @@ kubectl get events -n lm-webstack --sort-by='.lastTimestamp'
 kubectl get endpoints -n lm-webstack
 ```
 
+## Multi-Node Cluster and Scaling
+
+### Cluster Configuration (`kind-config.yaml`)
+
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+- role: worker
+  labels:
+    node-type: worker-1
+- role: worker
+  labels:
+    node-type: worker-2
+```
+
+**Multi-Node Configuration Explained:**
+- **Control Plane**: Single control plane node with ingress-ready labels
+- **Worker Nodes**: Two worker nodes for distributing application load
+- **Port Mappings**: Exposes ports 80 and 443 for external access
+- **Node Labels**: Labels for node identification and scheduling
+
+### API Scaling Configuration
+
+The API deployment has been updated to run 3 replicas by default:
+
+```yaml
+spec:
+  replicas: 3
+```
+
+**Scaling Benefits:**
+- **Load Distribution**: Requests are distributed across multiple pods
+- **High Availability**: If one pod fails, others continue serving
+- **Performance**: Multiple instances handle concurrent requests
+- **Node Distribution**: Pods can be scheduled on different nodes
+
+### Enhanced Frontend with Load Balancing Display
+
+The frontend now shows:
+- **Container ID**: Which API instance is handling the request
+- **Node Information**: Which node the pod is running on
+- **Load Balancing Test**: Interactive test to verify load distribution
+
+### Node Information Endpoint
+
+New API endpoint `/api/node-info` provides:
+- **Container ID**: Pod hostname
+- **Pod Name**: Kubernetes pod name
+- **Node Name**: Kubernetes node name
+
+### Load Balancing Test
+
+```powershell
+# Check current status
+.\run.ps1 status
+
+# Test load balancing
+.\scripts\test-load-balancing.ps1 50
+```
+
 ## Summary
 
 This implementation demonstrates a complete modern web application stack with:
 
 1. **Microservices Architecture**: Separate containers for frontend, backend, and database
 2. **Container Orchestration**: Kubernetes manages deployment, scaling, and networking
-3. **Service Discovery**: Automatic service-to-service communication
-4. **Health Monitoring**: Probes ensure application availability
-5. **Configuration Management**: Externalized configuration via ConfigMaps
-6. **Automation**: Scripted deployment process for consistency
-7. **Development Workflow**: Local development with kind cluster
+3. **Multi-Node Clustering**: Distributed across multiple worker nodes
+4. **Horizontal Scaling**: API replicas for load balancing and high availability
+5. **Service Discovery**: Automatic service-to-service communication
+6. **Health Monitoring**: Probes ensure application availability
+7. **Configuration Management**: Externalized configuration via ConfigMaps
+8. **Load Balancing**: Automatic distribution of requests across replicas
+9. **Automation**: Scripted deployment process for consistency
+10. **Development Workflow**: Local development with kind cluster
 
-The architecture is production-ready with proper separation of concerns, health checks, resource limits, and automated deployment processes.
+The architecture is production-ready with proper separation of concerns, health checks, resource limits, automated deployment processes, and horizontal scaling capabilities.
+
+## Complete Setup Walkthrough
+
+This section provides a complete step-by-step walkthrough from zero to a fully running application, with detailed explanations of every command and its purpose.
+
+### Step 1: Initial Environment Setup
+
+#### 1.1 Verify Current Directory
+```powershell
+# Check current working directory
+pwd
+# Expected output: C:\Users\lukas\OneDrive - Thomas More\Linux Webservices\Milestone2
+```
+
+**Explanation**: This command shows the current working directory. We need to be in the project root directory to run all subsequent commands.
+
+#### 1.2 Check Prerequisites
+```powershell
+# Check if Docker is installed and running
+docker --version
+docker ps
+
+# Check if kubectl is installed
+kubectl version --client
+
+# Check if kind is installed
+kind version
+```
+
+**Command Breakdown**:
+- `docker --version`: Shows Docker version to verify installation
+- `docker ps`: Lists running containers (verifies Docker daemon is running)
+- `kubectl version --client`: Shows kubectl version (client-side only)
+- `kind version`: Shows kind version for local Kubernetes clusters
+
+**Expected Output**:
+```
+Docker version 24.0.7, build afdd53b
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+Client Version: version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.4", ...}
+kind v0.20.0 go1.21.1 windows/amd64
+```
+
+### Step 2: Clean Environment (Optional)
+
+#### 2.1 Stop Existing Cluster (if any)
+```powershell
+# Stop any existing kind cluster
+kind delete cluster --name milestone2
+```
+
+**Explanation**: This removes any existing Kubernetes cluster with the name "milestone2" to ensure a clean start.
+
+#### 2.2 Clean Docker Images (Optional)
+```powershell
+# Remove existing project images
+docker rmi frontend-lm:latest api-lm:latest postgres-lm:latest --force
+```
+
+**Command Breakdown**:
+- `docker rmi`: Remove Docker images
+- `--force`: Force removal even if images are in use
+- This ensures we build fresh images
+
+### Step 3: Complete Deployment
+
+#### 3.1 Run Complete Deployment Script
+```powershell
+# Execute the complete deployment script
+powershell -ExecutionPolicy Bypass -File run.ps1 all
+```
+
+**Command Breakdown**:
+- `powershell -ExecutionPolicy Bypass`: Runs PowerShell with execution policy bypassed
+- `-File run.ps1`: Specifies the script file to execute
+- `all`: Parameter passed to the script indicating complete deployment
+
+**What This Command Does**:
+1. **Starts Kubernetes Cluster**: Creates a multi-node kind cluster
+2. **Builds Docker Images**: Creates containers for frontend, API, and database
+3. **Loads Images**: Transfers images to the Kubernetes cluster
+4. **Deploys Application**: Applies all Kubernetes manifests
+5. **Shows Status**: Displays deployment status
+
+**Expected Output**:
+```
+=== Starting complete deployment ===
+Starting multi-node Kubernetes cluster...
+Multi-node cluster created successfully!
+Building Docker images...
+Images built successfully!
+Loading images to cluster...
+Images loaded successfully!
+Deploying to Kubernetes...
+Application deployed successfully!
+
+Waiting for pods to be ready...
+=== Namespace ===
+NAME          STATUS   AGE
+lm-webstack   Active   1m
+
+=== Nodes ===
+NAME                       STATUS   ROLES           AGE   VERSION
+milestone2-control-plane   Ready    control-plane   1m    v1.27.3
+milestone2-worker          Ready    <none>          1m    v1.27.3
+milestone2-worker2         Ready    <none>          1m    v1.27.3
+
+=== Pods ===
+NAME                           READY   STATUS    RESTARTS   AGE   IP           NODE                 NOMINATED NODE   READINESS GATES
+api-lm-76f8598fcd-44q5k        1/1     Running   0          1m    10.244.2.6   milestone2-worker    <none>           <none>
+api-lm-76f8598fcd-cll62        1/1     Running   0          1m    10.244.1.6   milestone2-worker2   <none>           <none>
+api-lm-76f8598fcd-nbn7k        1/1     Running   0          1m    10.244.2.7   milestone2-worker    <none>           <none>
+frontend-lm-6db4944f9f-p6sxp   1/1     Running   0          1m    10.244.2.5   milestone2-worker    <none>           <none>
+postgres-lm-fb5478b6-5fd5r     1/1     Running   0          1m    10.244.1.3   milestone2-worker2   <none>           <none>
+
+=== Services ===
+NAME          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+api-lm        ClusterIP   10.96.31.111    <none>        8000/TCP       1m
+frontend-lm   NodePort    10.96.154.94    <none>        80:30000/TCP   1m
+postgres-lm   ClusterIP   10.96.201.201   <none>        5432/TCP       1m
+
+=== Deployment completed! ===
+To access the frontend, run: .\run.ps1 access-frontend
+To access the API, run: .\run.ps1 access-api
+```
+
+### Step 4: Access the Application
+
+#### 4.1 Set Up Port Forwarding for Frontend
+
+**Open a new PowerShell window** and run:
+```powershell
+# Navigate to project directory
+cd "C:\Users\lukas\OneDrive - Thomas More\Linux Webservices\Milestone2"
+
+# Start frontend port forwarding
+powershell -ExecutionPolicy Bypass -File run.ps1 access-frontend
+```
+
+**Command Breakdown**:
+- `cd`: Changes directory to project root
+- `powershell -ExecutionPolicy Bypass -File run.ps1 access-frontend`: Runs the access-frontend function
+
+**What This Does**:
+- Creates a tunnel from localhost:8080 to the frontend service
+- Allows browser access to the web application
+
+**Expected Output**:
+```
+Port forwarding to frontend service...
+Access at: http://localhost:8080
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+```
+
+#### 4.2 Set Up Port Forwarding for API
+
+**Open another PowerShell window** and run:
+```powershell
+# Navigate to project directory
+cd "C:\Users\lukas\OneDrive - Thomas More\Linux Webservices\Milestone2"
+
+# Start API port forwarding
+powershell -ExecutionPolicy Bypass -File run.ps1 access-api
+```
+
+**Expected Output**:
+```
+Port forwarding to API service...
+Access at: http://localhost:8000
+Forwarding from 127.0.0.1:8000 -> 8000
+Forwarding from [::1]:8000 -> 8000
+```
+
+### Step 5: Test the Application
+
+#### 5.1 Test Frontend
+1. **Open your web browser**
+2. **Navigate to**: `http://localhost:8080`
+3. **Expected Result**: You should see "**[Default User]** has reached milestone 2!"
+
+**What You're Seeing**:
+- The HTML page loads from the NGINX frontend
+- JavaScript fetches user data from the API
+- The API retrieves data from the PostgreSQL database
+- The name is displayed dynamically
+
+#### 5.2 Test API Endpoints
+
+**Open a third PowerShell window** and test the API:
+
+```powershell
+# Test health endpoint
+Invoke-WebRequest -Uri "http://localhost:8000/health" -Method GET
+
+# Test get current user
+Invoke-WebRequest -Uri "http://localhost:8000/user" -Method GET
+
+# Test update user name
+Invoke-WebRequest -Uri "http://localhost:8000/user" -Method POST -Headers @{ "Content-Type" = "application/json" } -Body '{"name":"Your Name"}'
+
+# Test container ID endpoint
+Invoke-WebRequest -Uri "http://localhost:8000/container-id" -Method GET
+```
+
+**Command Breakdown**:
+- `Invoke-WebRequest`: PowerShell cmdlet for making HTTP requests
+- `-Uri`: Specifies the URL to request
+- `-Method`: HTTP method (GET, POST, etc.)
+- `-Headers`: Sets HTTP headers (Content-Type for JSON)
+- `-Body`: Request body for POST requests
+
+**Expected Outputs**:
+```json
+// Health check
+{"status": "healthy"}
+
+// Get user
+{"name": "Default User"}
+
+// Update user
+{"message": "User name updated successfully", "name": "Your Name"}
+
+// Container ID
+{"container_id": "api-lm-76f8598fcd-44q5k"}
+```
+
+#### 5.3 Verify Integration
+1. **Update the user name** using the API command above
+2. **Refresh the browser** at `http://localhost:8080`
+3. **Expected Result**: The page should now show "**[Your Name]** has reached milestone 2!"
+
+### Step 6: Advanced Testing
+
+#### 6.1 Test Load Balancing
+```powershell
+# Test load balancing by making multiple requests
+for ($i = 1; $i -le 10; $i++) {
+    $response = Invoke-WebRequest -Uri "http://localhost:8000/container-id" -Method GET
+    $data = $response.Content | ConvertFrom-Json
+    Write-Host "Request $i`: $($data.container_id)"
+}
+```
+
+**What This Tests**:
+- **Load Balancing**: Requests are distributed across 3 API replicas
+- **High Availability**: Multiple instances handle requests
+- **Container Distribution**: Pods running on different nodes
+
+#### 6.2 Check Cluster Status
+```powershell
+# Check all pods
+kubectl get pods -n lm-webstack
+
+# Check services
+kubectl get services -n lm-webstack
+
+# Check nodes
+kubectl get nodes
+
+# Check events
+kubectl get events -n lm-webstack --sort-by='.lastTimestamp'
+```
+
+**Command Breakdown**:
+- `kubectl get pods`: Lists all pods in the namespace
+- `kubectl get services`: Lists all services
+- `kubectl get nodes`: Lists all cluster nodes
+- `kubectl get events`: Shows recent cluster events
+
+### Step 7: Understanding the Architecture
+
+#### 7.1 Container Distribution
+```powershell
+# Check which nodes pods are running on
+kubectl get pods -n lm-webstack -o wide
+```
+
+**Expected Output**:
+```
+NAME                           READY   STATUS    RESTARTS   AGE   IP           NODE                 NOMINATED NODE   READINESS GATES
+api-lm-76f8598fcd-44q5k        1/1     Running   0          1m    10.244.2.6   milestone2-worker    <none>           <none>
+api-lm-76f8598fcd-cll62        1/1     Running   0          1m    10.244.1.6   milestone2-worker2   <none>           <none>
+api-lm-76f8598fcd-nbn7k        1/1     Running   0          1m    10.244.2.7   milestone2-worker    <none>           <none>
+frontend-lm-6db4944f9f-p6sxp   1/1     Running   0          1m    10.244.2.5   milestone2-worker    <none>           <none>
+postgres-lm-fb5478b6-5fd5r     1/1     Running   0          1m    10.244.1.3   milestone2-worker2   <none>           <none>
+```
+
+**What This Shows**:
+- **API Pods**: Distributed across worker nodes (2 on worker, 1 on worker2)
+- **Frontend**: Running on worker node
+- **Database**: Running on worker2 node
+- **Load Distribution**: Kubernetes scheduler distributed pods for optimal performance
+
+#### 7.2 Service Discovery
+```powershell
+# Check service endpoints
+kubectl get endpoints -n lm-webstack
+```
+
+**Expected Output**:
+```
+NAME          ENDPOINTS                                           AGE
+api-lm        10.244.1.6:8000,10.244.2.6:8000,10.244.2.7:8000   1m
+frontend-lm   10.244.2.5:80                                      1m
+postgres-lm   10.244.1.3:5432                                    1m
+```
+
+**What This Shows**:
+- **API Service**: Routes to 3 API pods (load balancing)
+- **Frontend Service**: Routes to 1 frontend pod
+- **Database Service**: Routes to 1 database pod
+
+### Step 8: Monitoring and Logs
+
+#### 8.1 Check Application Logs
+```powershell
+# Check API logs
+kubectl logs -n lm-webstack deployment/api-lm --tail=20
+
+# Check frontend logs
+kubectl logs -n lm-webstack deployment/frontend-lm --tail=20
+
+# Check database logs
+kubectl logs -n lm-webstack deployment/postgres-lm --tail=20
+```
+
+**Command Breakdown**:
+- `kubectl logs`: Retrieves logs from pods
+- `-n lm-webstack`: Specifies namespace
+- `deployment/api-lm`: Gets logs from all pods in the deployment
+- `--tail=20`: Shows last 20 lines of logs
+
+#### 8.2 Check Resource Usage
+```powershell
+# Check pod resource usage
+kubectl top pods -n lm-webstack
+
+# Check node resource usage
+kubectl top nodes
+```
+
+### Step 9: Cleanup (When Done)
+
+#### 9.1 Stop Port Forwarding
+- **Press Ctrl+C** in both PowerShell windows running port forwarding
+- This stops the port forwarding tunnels
+
+#### 9.2 Clean Up Resources
+```powershell
+# Remove all Kubernetes resources
+powershell -ExecutionPolicy Bypass -File run.ps1 clean
+
+# Stop the cluster
+powershell -ExecutionPolicy Bypass -File run.ps1 stop-cluster
+```
+
+**What This Does**:
+- `clean`: Removes all resources in the lm-webstack namespace
+- `stop-cluster`: Deletes the entire kind cluster
+
+### Step 10: Troubleshooting Common Issues
+
+#### 10.1 Pod Not Starting
+```powershell
+# Check pod details
+kubectl describe pod <pod-name> -n lm-webstack
+
+# Check pod logs
+kubectl logs <pod-name> -n lm-webstack
+```
+
+#### 10.2 Service Not Accessible
+```powershell
+# Check service endpoints
+kubectl get endpoints -n lm-webstack
+
+# Check service details
+kubectl describe service <service-name> -n lm-webstack
+```
+
+#### 10.3 Database Connection Issues
+```powershell
+# Check database pod status
+kubectl get pods -n lm-webstack -l app=postgres-lm
+
+# Check database logs
+kubectl logs -n lm-webstack deployment/postgres-lm
+```
+
+## Summary
+
+This complete walkthrough demonstrates:
+
+1. **Automated Deployment**: Single command deploys entire application stack
+2. **Multi-Node Architecture**: Application distributed across multiple nodes
+3. **Load Balancing**: API requests automatically distributed across replicas
+4. **Service Discovery**: Automatic communication between services
+5. **Health Monitoring**: Built-in health checks and monitoring
+6. **Resource Management**: Proper resource limits and requests
+7. **Scalability**: Easy horizontal scaling of components
+8. **Observability**: Comprehensive logging and monitoring
+9. **Cleanup**: Proper resource cleanup when done
+
+The application is now fully functional and demonstrates modern containerized application deployment practices with Kubernetes.

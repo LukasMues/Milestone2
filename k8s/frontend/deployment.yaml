@@ -15,6 +15,10 @@ spec:
     metadata:
       labels:
         app: frontend-lm
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: frontend

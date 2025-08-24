@@ -8,15 +8,86 @@
   </head>
   <body>
     <h1><span id="user">Loading...</span> has reached milestone 2!</h1>
+    <p>Container ID: <span id="container-id">Loading...</span></p>
+    
+    <div style="margin-top: 20px;">
+      <button onclick="refreshData()">Refresh Data</button>
+      <button onclick="testLoadBalancing()">Test Load Balancing</button>
+    </div>
+
+    <div id="load-balance-results" style="margin-top: 20px; display: none;">
+      <h3>Load Balancing Test Results:</h3>
+      <div id="results-list"></div>
+    </div>
 
     <script>
-      // fetch user from API
-      fetch("/api/user")
-        .then((res) => res.json())
-        .then((data) => {
-          const user = data.name;
-          document.getElementById("user").innerText = user;
-        });
+      // Function to fetch user data
+      async function fetchUserData() {
+        try {
+          const response = await fetch("/api/user");
+          const data = await response.json();
+          document.getElementById("user").innerText = data.name;
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          document.getElementById("user").innerText = "Error loading user";
+        }
+      }
+
+      // Function to fetch container ID
+      async function fetchContainerId() {
+        try {
+          const response = await fetch("/api/container-id");
+          const data = await response.json();
+          document.getElementById("container-id").innerText = data.container_id;
+        } catch (error) {
+          console.error("Error fetching container ID:", error);
+          document.getElementById("container-id").innerText = "Error loading container ID";
+        }
+      }
+
+
+
+      // Function to refresh all data
+      function refreshData() {
+        fetchUserData();
+        fetchContainerId();
+      }
+
+      // Function to test load balancing
+      async function testLoadBalancing() {
+        const resultsDiv = document.getElementById("load-balance-results");
+        const resultsList = document.getElementById("results-list");
+        
+        resultsDiv.style.display = "block";
+        resultsList.innerHTML = "<p>Testing load balancing...</p>";
+        
+        const results = [];
+        
+        for (let i = 0; i < 10; i++) {
+          try {
+            const response = await fetch("/api/container-id");
+            const data = await response.json();
+            results.push(data.container_id);
+            
+            // Update results display
+            resultsList.innerHTML = results.map((id, index) => 
+              `<p>Request ${index + 1}: ${id}</p>`
+            ).join("");
+            
+            // Small delay between requests
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } catch (error) {
+            console.error(`Error in request ${i + 1}:`, error);
+          }
+        }
+        
+        // Show summary
+        const uniqueIds = [...new Set(results)];
+        resultsList.innerHTML += `<h4>Summary:</h4><p>Total requests: ${results.length}</p><p>Unique containers: ${uniqueIds.length}</p><p>Containers used: ${uniqueIds.join(", ")}</p>`;
+      }
+
+      // Load initial data
+      refreshData();
     </script>
   </body>
 </html> 

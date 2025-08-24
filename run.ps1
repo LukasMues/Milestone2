@@ -2,9 +2,9 @@
 param([string]$action = "help")
 
 function Start-Cluster {
-    Write-Host "Starting Kubernetes cluster..." -ForegroundColor Green
-    & "$env:USERPROFILE\tools\kind.exe" create cluster --name milestone2
-    Write-Host "Cluster created successfully!" -ForegroundColor Green
+    Write-Host "Starting multi-node Kubernetes cluster..." -ForegroundColor Green
+    & "$env:USERPROFILE\tools\kind.exe" create cluster --name milestone2 --config kind-config.yaml
+    Write-Host "Multi-node cluster created successfully!" -ForegroundColor Green
 }
 
 function Build-Images {
@@ -29,17 +29,22 @@ function Deploy-Application {
     kubectl apply -f k8s/postgres/
     kubectl apply -f k8s/api/
     kubectl apply -f k8s/frontend/
+    kubectl apply -f k8s/monitoring/
     Write-Host "Application deployed successfully!" -ForegroundColor Green
 }
 
 function Show-Status {
     Write-Host "=== Namespace ===" -ForegroundColor Cyan
     kubectl get namespace lm-webstack
+    Write-Host "`n=== Nodes ===" -ForegroundColor Cyan
+    kubectl get nodes
     Write-Host "`n=== Pods ===" -ForegroundColor Cyan
-    kubectl get pods -n lm-webstack
+    kubectl get pods -n lm-webstack -o wide
     Write-Host "`n=== Services ===" -ForegroundColor Cyan
     kubectl get services -n lm-webstack
 }
+
+
 
 function Access-Frontend {
     Write-Host "Port forwarding to frontend service..." -ForegroundColor Green
@@ -51,6 +56,12 @@ function Access-API {
     Write-Host "Port forwarding to API service..." -ForegroundColor Green
     Write-Host "Access at: http://localhost:8000" -ForegroundColor Cyan
     kubectl port-forward -n lm-webstack svc/api-lm 8000:8000
+}
+
+function Access-Prometheus {
+    Write-Host "Port forwarding to Prometheus..." -ForegroundColor Green
+    Write-Host "Access at: http://localhost:9090" -ForegroundColor Cyan
+    kubectl port-forward -n monitoring svc/prometheus 9090:9090
 }
 
 function Clean-Resources {
@@ -81,13 +92,14 @@ function Deploy-All {
 function Show-Help {
     Write-Host "=== Milestone 2 Project Runner ===" -ForegroundColor Cyan
     Write-Host "Available actions:" -ForegroundColor Yellow
-    Write-Host "  start-cluster    - Start Kubernetes cluster"
+    Write-Host "  start-cluster    - Start multi-node Kubernetes cluster"
     Write-Host "  build           - Build all Docker images"
     Write-Host "  load-images     - Load images to cluster"
     Write-Host "  deploy          - Deploy application to Kubernetes"
     Write-Host "  status          - Show deployment status"
     Write-Host "  access-frontend - Port forward to frontend service"
     Write-Host "  access-api      - Port forward to API service"
+    Write-Host "  access-prometheus - Port forward to Prometheus monitoring"
     Write-Host "  clean           - Remove all Kubernetes resources"
     Write-Host "  stop-cluster    - Stop Kubernetes cluster"
     Write-Host "  all             - Complete deployment (start, build, load, deploy)"
@@ -104,6 +116,7 @@ switch ($action) {
     "status" { Show-Status }
     "access-frontend" { Access-Frontend }
     "access-api" { Access-API }
+    "access-prometheus" { Access-Prometheus }
     "clean" { Clean-Resources }
     "stop-cluster" { Stop-Cluster }
     "all" { Deploy-All }

@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+  labels:
+    app: grafana
+    project: milestone2
+data:
+  dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Milestone 2 Monitoring",
+        "tags": ["milestone2"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "HTTP Requests Total",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(http_requests_total) by (endpoint)",
+                "legendFormat": "{{endpoint}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "displayMode": "list"
+                }
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Request Latency",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])",
+                "legendFormat": "{{endpoint}}"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "User Operations",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(user_operations_total) by (operation)",
+                "legendFormat": "{{operation}}"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Container Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "container_memory_usage_bytes{container!=\"POD\"}",
+                "legendFormat": "{{pod}}"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Container CPU Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(container_cpu_usage_seconds_total{container!=\"POD\"}[5m])",
+                "legendFormat": "{{pod}}"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "5s"
+      }
+    }
