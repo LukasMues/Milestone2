@@ -1,5 +1,30 @@
 # Milestone 2: Complete Step-by-Step Implementation Guide
 
+## 🎯 **For Complete Beginners**
+
+This guide is designed for someone who has **never worked with containers, Kubernetes, or modern web development** before. It starts from absolute zero and walks you through every step, explaining what each tool does and why we use it.
+
+### **What You'll Learn**
+- How to install all required tools from scratch
+- What containers and Kubernetes are
+- How to build and deploy a complete web application
+- Modern software development practices
+
+### **Time Required**
+- **Prerequisites Installation**: 30-60 minutes (first time only)
+- **Application Deployment**: 15-30 minutes
+- **Testing and Learning**: 30-60 minutes
+
+### **What You'll End Up With**
+A fully functional web application running on Kubernetes with:
+- A web frontend that users can access
+- A backend API that handles requests
+- A database that stores information
+- Load balancing across multiple instances
+- Automatic health monitoring
+
+---
+
 ## Table of Contents
 1. [Project Overview](#project-overview)
 2. [Prerequisites Installation](#prerequisites-installation)
@@ -27,33 +52,287 @@ This project implements a complete web stack using modern containerization and o
 
 ## Prerequisites Installation
 
-### Step 1: Install Required Tools
+This section guides you through installing all required tools from scratch. You'll need these tools to run the Kubernetes application.
 
-The project includes installation scripts for Windows:
+### Step 1: System Requirements
 
+Before starting, ensure your system meets these requirements:
+- **Operating System**: Windows 10/11 (recommended), macOS, or Linux
+- **RAM**: Minimum 8GB (16GB recommended)
+- **Storage**: At least 10GB free disk space
+- **Administrator Access**: Required for Docker installation
+
+### Step 2: Install Docker Desktop
+
+Docker Desktop is the container runtime that will run our application containers.
+
+#### 2.1 Download Docker Desktop
+1. **Go to**: https://www.docker.com/products/docker-desktop/
+2. **Click**: "Download for Windows"
+3. **Save**: The installer file (Docker Desktop Installer.exe)
+
+#### 2.2 Install Docker Desktop
+1. **Run**: The downloaded Docker Desktop Installer.exe
+2. **Follow**: The installation wizard
+3. **Restart**: Your computer when prompted
+4. **Start**: Docker Desktop from the Start menu
+
+#### 2.3 Verify Docker Installation
 ```powershell
-# Install Docker Desktop, kubectl, kind, and make
-.\install-prerequisites.ps1
-.\install-tools.ps1
+# Open PowerShell and run:
+docker --version
+docker ps
 ```
 
-**Key Tools Explained:**
-- **Docker Desktop**: Container runtime for building and running containers
-- **kubectl**: Kubernetes command-line interface for cluster management
-- **kind**: Kubernetes in Docker - creates local Kubernetes clusters using Docker containers
-- **make**: Build automation tool for running complex commands
+**Expected Output**:
+```
+Docker version 24.0.7, build afdd53b
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+```
 
-### Step 2: Verify Installation
+**What These Commands Do**:
+- `docker --version`: Shows Docker version to confirm installation
+- `docker ps`: Lists running containers (empty list is normal for fresh install)
+
+### Step 3: Install kubectl
+
+kubectl is the command-line tool for interacting with Kubernetes clusters.
+
+#### 3.1 Download kubectl (Windows)
+```powershell
+# Download kubectl for Windows
+Invoke-WebRequest -Uri "https://dl.k8s.io/release/v1.28.4/bin/windows/amd64/kubectl.exe" -OutFile "kubectl.exe"
+
+# Move to a directory in your PATH (requires admin privileges)
+Move-Item kubectl.exe "C:\Windows\System32\kubectl.exe"
+```
+
+#### 3.2 Alternative: Install via Chocolatey
+If you have Chocolatey package manager:
+```powershell
+# Install Chocolatey first (if you don't have it)
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install kubectl
+choco install kubernetes-cli
+```
+
+#### 3.3 Verify kubectl Installation
+```powershell
+kubectl version --client
+```
+
+**Expected Output**:
+```
+Client Version: version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.4", GitCommit:"a3a691b64ec7e2966cefc374d6e4f436fde9e3c3", GitTreeState:"clean", BuildDate:"2023-11-15T10:43:57Z", GoVersion:"go1.21.3", Compiler:"gc", Platform:"windows/amd64"}
+```
+
+### Step 4: Install kind (Kubernetes in Docker)
+
+kind creates local Kubernetes clusters using Docker containers.
+
+#### 4.1 Download kind
+```powershell
+# Create tools directory
+New-Item -ItemType Directory -Path "$env:USERPROFILE\tools" -Force
+
+# Download kind for Windows
+$kindUrl = "https://kind.sigs.k8s.io/dl/v0.20.0/kind-windows-amd64"
+$kindPath = "$env:USERPROFILE\tools\kind.exe"
+Invoke-WebRequest -Uri $kindUrl -OutFile $kindPath
+
+# Add to PATH (restart terminal after this)
+$currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+[Environment]::SetEnvironmentVariable("PATH", "$currentPath;$env:USERPROFILE\tools", "User")
+```
+
+#### 4.2 Verify kind Installation
+```powershell
+# Restart PowerShell, then run:
+& "$env:USERPROFILE\tools\kind.exe" version
+```
+
+**Expected Output**:
+```
+kind v0.20.0 go1.21.1 windows/amd64
+```
+
+### Step 5: Install Git (if not already installed)
+
+Git is needed to clone the project repository.
+
+#### 5.1 Download Git
+1. **Go to**: https://git-scm.com/download/win
+2. **Download**: Git for Windows
+3. **Install**: Follow the installation wizard
+
+#### 5.2 Verify Git Installation
+```powershell
+git --version
+```
+
+**Expected Output**:
+```
+git version 2.42.0.windows.2
+```
+
+### Step 6: Clone the Project Repository
+
+Now you need to get the project files onto your computer.
+
+#### 6.1 Clone the Repository
+```powershell
+# Navigate to where you want to store the project
+cd C:\Users\$env:USERNAME\Desktop
+
+# Clone the repository (replace with your actual repository URL)
+git clone <your-repository-url>
+cd Milestone2
+```
+
+**What This Does**:
+- `cd`: Changes directory to Desktop
+- `git clone`: Downloads the project files from the repository
+- `cd Milestone2`: Enters the project directory
+
+### Step 7: Verify All Prerequisites
+
+Run this comprehensive check to ensure everything is installed correctly:
 
 ```powershell
 # Check Docker
+Write-Host "=== Docker ===" -ForegroundColor Green
 docker --version
 docker ps
 
-# Check Kubernetes tools
+# Check kubectl
+Write-Host "`n=== kubectl ===" -ForegroundColor Green
 kubectl version --client
-kind version
+
+# Check kind
+Write-Host "`n=== kind ===" -ForegroundColor Green
+& "$env:USERPROFILE\tools\kind.exe" version
+
+# Check Git
+Write-Host "`n=== Git ===" -ForegroundColor Green
+git --version
+
+# Check current directory
+Write-Host "`n=== Current Directory ===" -ForegroundColor Green
+pwd
 ```
+
+**Expected Output**:
+```
+=== Docker ===
+Docker version 24.0.7, build afdd53b
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+=== kubectl ===
+Client Version: version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.4", ...}
+
+=== kind ===
+kind v0.20.0 go1.21.1 windows/amd64
+
+=== Git ===
+git version 2.42.0.windows.2
+
+=== Current Directory ===
+Path
+----
+C:\Users\YourUsername\Desktop\Milestone2
+```
+
+### Step 8: Troubleshooting Common Installation Issues
+
+#### 8.1 Docker Not Starting
+**Problem**: Docker Desktop won't start or shows errors
+**Solutions**:
+1. **Enable WSL 2**: Docker Desktop requires WSL 2 on Windows
+   ```powershell
+   # Enable WSL feature
+   dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+   dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+   ```
+2. **Restart Computer**: After enabling WSL 2
+3. **Check System Requirements**: Ensure virtualization is enabled in BIOS
+
+#### 8.2 kubectl Not Found
+**Problem**: `kubectl: command not found`
+**Solutions**:
+1. **Check PATH**: Ensure kubectl is in your system PATH
+2. **Restart Terminal**: Close and reopen PowerShell
+3. **Manual Installation**: Use the download method above
+
+#### 8.3 kind Not Found
+**Problem**: `kind: command not found`
+**Solutions**:
+1. **Check Installation Path**: Verify kind.exe is in `%USERPROFILE%\tools\`
+2. **Update PATH**: Ensure the tools directory is in your PATH
+3. **Restart Terminal**: Close and reopen PowerShell
+
+#### 8.4 Permission Errors
+**Problem**: "Access denied" or permission errors
+**Solutions**:
+1. **Run as Administrator**: Right-click PowerShell and select "Run as Administrator"
+2. **Check Antivirus**: Temporarily disable antivirus during installation
+3. **Windows Defender**: Add exceptions for the tools directory
+
+### Step 9: Final Verification
+
+Before proceeding to the next section, run this final verification:
+
+```powershell
+# Test Docker functionality
+Write-Host "Testing Docker..." -ForegroundColor Yellow
+docker run hello-world
+
+# Test kubectl functionality
+Write-Host "`nTesting kubectl..." -ForegroundColor Yellow
+kubectl version --client
+
+# Test kind functionality
+Write-Host "`nTesting kind..." -ForegroundColor Yellow
+& "$env:USERPROFILE\tools\kind.exe" version
+
+# Check project files
+Write-Host "`nChecking project files..." -ForegroundColor Yellow
+ls
+```
+
+**Expected Output**:
+```
+Testing Docker...
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+Testing kubectl...
+Client Version: version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.4", ...}
+
+Testing kind...
+kind v0.20.0 go1.21.1 windows/amd64
+
+Checking project files...
+    Directory: C:\Users\YourUsername\Desktop\Milestone2
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        8/24/2025   8:50 PM                api
+d-----        8/24/2025   8:50 PM                db
+d-----        8/24/2025   8:50 PM                frontend
+d-----        8/24/2025   8:50 PM                k8s
+d-----        8/24/2025   8:50 PM                scripts
+-a----        8/24/2025   8:50 PM           1,234 README.md
+-a----        8/24/2025   8:50 PM           5,678 run.ps1
+```
+
+**What This Verifies**:
+- **Docker**: Can run containers successfully
+- **kubectl**: Command-line tool is working
+- **kind**: Can create Kubernetes clusters
+- **Project Files**: All necessary files are present
+
+If all these tests pass, you're ready to proceed to the next section!
 
 ## Project Structure
 
@@ -1052,42 +1331,49 @@ The architecture is production-ready with proper separation of concerns, health 
 
 This section provides a complete step-by-step walkthrough from zero to a fully running application, with detailed explanations of every command and its purpose.
 
-### Step 1: Initial Environment Setup
+### Step 1: Complete Prerequisites Installation
 
-#### 1.1 Verify Current Directory
+**IMPORTANT**: Before starting this walkthrough, you must complete the **Prerequisites Installation** section above. This includes installing Docker Desktop, kubectl, kind, and Git.
+
+#### 1.1 Verify Prerequisites Installation
 ```powershell
 # Check current working directory
 pwd
-# Expected output: C:\Users\lukas\OneDrive - Thomas More\Linux Webservices\Milestone2
-```
+# Expected output: C:\Users\YourUsername\Desktop\Milestone2 (or your project location)
 
-**Explanation**: This command shows the current working directory. We need to be in the project root directory to run all subsequent commands.
-
-#### 1.2 Check Prerequisites
-```powershell
-# Check if Docker is installed and running
+# Verify all tools are installed
+Write-Host "=== Verifying Prerequisites ===" -ForegroundColor Green
 docker --version
-docker ps
-
-# Check if kubectl is installed
 kubectl version --client
-
-# Check if kind is installed
-kind version
+& "$env:USERPROFILE\tools\kind.exe" version
+git --version
 ```
 
-**Command Breakdown**:
-- `docker --version`: Shows Docker version to verify installation
-- `docker ps`: Lists running containers (verifies Docker daemon is running)
-- `kubectl version --client`: Shows kubectl version (client-side only)
-- `kind version`: Shows kind version for local Kubernetes clusters
+**Explanation**: This command shows the current working directory and verifies all required tools are installed. We need to be in the project root directory to run all subsequent commands.
 
 **Expected Output**:
 ```
+=== Verifying Prerequisites ===
 Docker version 24.0.7, build afdd53b
-CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 Client Version: version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.4", ...}
 kind v0.20.0 go1.21.1 windows/amd64
+git version 2.42.0.windows.2
+```
+
+#### 1.2 Test Docker Functionality
+```powershell
+# Test Docker is working
+Write-Host "`n=== Testing Docker ===" -ForegroundColor Green
+docker run hello-world
+```
+
+**What This Does**: This tests that Docker can run containers successfully.
+
+**Expected Output**:
+```
+=== Testing Docker ===
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
 ```
 
 ### Step 2: Clean Environment (Optional)
