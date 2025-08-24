@@ -25,19 +25,45 @@ A fully functional web application running on Kubernetes with:
 
 ---
 
+## 📋 **Step-by-Step Guide Overview**
+
+### **Phase 1: Setup and Installation (Steps 1-3)**
+- **Step 1**: Install Prerequisites (Docker, kubectl, kind, Git)
+- **Step 2**: Clone and Explore Project Structure
+- **Step 3**: Verify Installation and Environment
+
+### **Phase 2: Understanding the Code (Steps 4-7)**
+- **Step 4**: Backend API Implementation
+- **Step 5**: Database Implementation
+- **Step 6**: Frontend Implementation
+- **Step 7**: Docker Containerization
+
+### **Phase 3: Deployment and Orchestration (Steps 8-10)**
+- **Step 8**: Kubernetes Orchestration
+- **Step 9**: Deployment Automation
+- **Step 10**: Testing and Verification
+
+### **Phase 4: Advanced Features (Steps 11-13)**
+- **Step 11**: Monitoring and Metrics
+- **Step 12**: Load Balancing and Scaling
+- **Step 13**: Troubleshooting and Cleanup
+
+---
+
 ## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Prerequisites Installation](#prerequisites-installation)
-3. [Project Structure](#project-structure)
-4. [Backend API Implementation](#backend-api-implementation)
-5. [Database Implementation](#database-implementation)
-6. [Frontend Implementation](#frontend-implementation)
-7. [Docker Containerization](#docker-containerization)
-8. [Kubernetes Orchestration](#kubernetes-orchestration)
-9. [Deployment Automation](#deployment-automation)
-10. [Testing and Verification](#testing-and-verification)
-11. [Troubleshooting](#troubleshooting)
-12. [Complete Setup Walkthrough](#complete-setup-walkthrough)
+1. [Step 1: Install Prerequisites](#step-1-install-prerequisites)
+2. [Step 2: Clone and Explore Project Structure](#step-2-clone-and-explore-project-structure)
+3. [Step 3: Verify Installation and Environment](#step-3-verify-installation-and-environment)
+4. [Step 4: Backend API Implementation](#step-4-backend-api-implementation)
+5. [Step 5: Database Implementation](#step-5-database-implementation)
+6. [Step 6: Frontend Implementation](#step-6-frontend-implementation)
+7. [Step 7: Docker Containerization](#step-7-docker-containerization)
+8. [Step 8: Kubernetes Orchestration](#step-8-kubernetes-orchestration)
+9. [Step 9: Deployment Automation](#step-9-deployment-automation)
+10. [Step 10: Testing and Verification](#step-10-testing-and-verification)
+11. [Step 11: Monitoring and Metrics](#step-11-monitoring-and-metrics)
+12. [Step 12: Load Balancing and Scaling](#step-12-load-balancing-and-scaling)
+13. [Step 13: Troubleshooting and Cleanup](#step-13-troubleshooting-and-cleanup)
 
 ## Project Overview
 
@@ -50,11 +76,21 @@ This project implements a complete web stack using modern containerization and o
 - **Orchestration**: Kubernetes with kind (Kubernetes in Docker)
 - **Automation**: PowerShell scripts for deployment
 
-## Prerequisites Installation
+---
 
-This section guides you through installing all required tools from scratch. You'll need these tools to run the Kubernetes application.
+## Step 1: Install Prerequisites
 
-### Step 1: System Requirements
+**Objective**: Install all required tools to run the Kubernetes application.
+
+**Estimated Time**: 30-60 minutes (first time only)
+
+**What You'll Install**:
+- Docker Desktop (container runtime)
+- kubectl (Kubernetes command-line tool)
+- kind (local Kubernetes cluster)
+- Git (version control)
+
+### 1.1 System Requirements Check
 
 Before starting, ensure your system meets these requirements:
 - **Operating System**: Windows 10/11 (recommended), macOS, or Linux
@@ -334,6 +370,33 @@ d-----        8/24/2025   8:50 PM                scripts
 
 If all these tests pass, you're ready to proceed to the next section!
 
+---
+
+## Step 2: Clone and Explore Project Structure
+
+**Objective**: Get the project files and understand the project organization.
+
+**Estimated Time**: 5-10 minutes
+
+### 2.1 Clone the Project Repository
+
+Now you need to get the project files onto your computer.
+
+#### Clone the Repository
+```powershell
+# Navigate to where you want to store the project
+cd C:\Users\$env:USERNAME\Desktop
+
+# Clone the repository (replace with your actual repository URL)
+git clone <your-repository-url>
+cd Milestone2
+```
+
+**What This Does**:
+- `cd`: Changes directory to Desktop
+- `git clone`: Downloads the project files from the repository
+- `cd Milestone2`: Enters the project directory
+
 ## Project Structure
 
 ```
@@ -360,7 +423,81 @@ Milestone2/
 └── README.md             # Project documentation
 ```
 
-## Backend API Implementation
+---
+
+## Step 3: Verify Installation and Environment
+
+**Objective**: Ensure all tools are properly installed and working.
+
+**Estimated Time**: 5-10 minutes
+
+### 3.1 Final Verification
+
+Before proceeding to the next section, run this final verification:
+
+```powershell
+# Test Docker functionality
+Write-Host "Testing Docker..." -ForegroundColor Yellow
+docker run hello-world
+
+# Test kubectl functionality
+Write-Host "`nTesting kubectl..." -ForegroundColor Yellow
+kubectl version --client
+
+# Test kind functionality
+Write-Host "`nTesting kind..." -ForegroundColor Yellow
+& "$env:USERPROFILE\tools\kind.exe" version
+
+# Check project files
+Write-Host "`nChecking project files..." -ForegroundColor Yellow
+ls
+```
+
+**Expected Output**:
+```
+Testing Docker...
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+Testing kubectl...
+Client Version: version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.4", ...}
+
+Testing kind...
+kind v0.20.0 go1.21.1 windows/amd64
+
+Checking project files...
+    Directory: C:\Users\YourUsername\Desktop\Milestone2
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        8/24/2025   8:50 PM                api
+d-----        8/24/2025   8:50 PM                db
+d-----        8/24/2025   8:50 PM                frontend
+d-----        8/24/2025   8:50 PM                k8s
+d-----        8/24/2025   8:50 PM                scripts
+-a----        8/24/2025   8:50 PM           1,234 README.md
+-a----        8/24/2025   8:50 PM           5,678 run.ps1
+```
+
+**What This Verifies**:
+- **Docker**: Can run containers successfully
+- **kubectl**: Command-line tool is working
+- **kind**: Can create Kubernetes clusters
+- **Project Files**: All necessary files are present
+
+If all these tests pass, you're ready to proceed to the next section!
+
+---
+
+## Step 4: Backend API Implementation
+
+**Objective**: Understand how the FastAPI backend works.
+
+**Estimated Time**: 15-20 minutes
+
+### 4.1 Understanding the API Structure
+
+The backend is built using FastAPI, a modern Python web framework. Let's examine every line of the main FastAPI application:
 
 ### FastAPI Application (`api/app.py`)
 
@@ -637,9 +774,17 @@ async def get_metrics():             # Asynchronous function handler
 
 **Purpose**: This endpoint exposes metrics for Prometheus to scrape and monitor application performance.
 
-### Database Layer (`api/db.py`)
+---
 
-Let's examine every line of the database connection module:
+## Step 5: Database Implementation
+
+**Objective**: Understand how the PostgreSQL database is configured and managed.
+
+**Estimated Time**: 10-15 minutes
+
+### 5.1 Database Connection Layer
+
+The database layer handles all database operations. Let's examine every line of the database connection module:
 
 ```python
 # Standard library imports
@@ -850,7 +995,17 @@ def update_user_name(name):
 - **Transaction Safety**: Uses explicit commits
 - **Error Handling**: Graceful fallback to insert if update fails
 
-## Database Implementation
+---
+
+## Step 6: Frontend Implementation
+
+**Objective**: Understand how the web frontend works and integrates with the backend.
+
+**Estimated Time**: 15-20 minutes
+
+### 6.1 Static HTML Frontend
+
+The frontend is a simple HTML page that communicates with the API. Let's examine every line of the frontend HTML file:
 
 ### PostgreSQL Container (`db/Dockerfile`)
 
@@ -1264,7 +1419,22 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 - **Security**: Minimal attack surface with fewer packages
 - **Performance**: Faster container startup and deployment
 
-## Docker Containerization
+---
+
+## Step 7: Docker Containerization
+
+**Objective**: Understand how each component is packaged into Docker containers.
+
+**Estimated Time**: 15-20 minutes
+
+### 7.1 Container Overview
+
+Each component of our application is packaged into its own Docker container:
+- **Frontend Container**: NGINX serving static HTML
+- **API Container**: FastAPI Python application
+- **Database Container**: PostgreSQL database
+
+Let's examine each container configuration:
 
 ### API Container (`api/Dockerfile`)
 
@@ -1363,7 +1533,24 @@ prometheus-client==0.19.0     # Prometheus monitoring client for metrics collect
 - **`==`**: Exact version pinning ensures reproducible builds
 - **Specific versions**: Prevents unexpected breaking changes from dependency updates
 
-## Kubernetes Orchestration
+---
+
+## Step 8: Kubernetes Orchestration
+
+**Objective**: Understand how Kubernetes manages and orchestrates our containers.
+
+**Estimated Time**: 20-25 minutes
+
+### 8.1 Kubernetes Overview
+
+Kubernetes is a container orchestration platform that manages:
+- **Deployments**: How many copies of each application to run
+- **Services**: How applications communicate with each other
+- **ConfigMaps and Secrets**: Configuration and sensitive data
+- **Health Checks**: Monitoring application health
+- **Load Balancing**: Distributing traffic across multiple instances
+
+Let's examine the Kubernetes configuration files:
 
 ### Namespace (`k8s/namespace.yaml`)
 
@@ -1655,7 +1842,24 @@ spec:
   - **ClusterIP**: Internal cluster communication (database, API)
   - **NodePort**: External access on specific node port (frontend)
 
-## Deployment Automation
+---
+
+## Step 9: Deployment Automation
+
+**Objective**: Understand how the deployment scripts automate the entire process.
+
+**Estimated Time**: 10-15 minutes
+
+### 9.1 Automation Overview
+
+The project includes PowerShell scripts that automate:
+- **Cluster Creation**: Setting up the Kubernetes cluster
+- **Image Building**: Creating Docker containers
+- **Deployment**: Deploying all components to Kubernetes
+- **Status Monitoring**: Checking deployment status
+- **Access Setup**: Setting up port forwarding
+
+Let's examine the main deployment script:
 
 ### Main Deployment Script (`run.ps1`)
 
@@ -1743,9 +1947,26 @@ function Deploy-All {
 - **Status Display**: Shows final deployment status
 - **User Guidance**: Provides next steps for access
 
-## Testing and Verification
+---
 
-### Step 1: Check Deployment Status
+## Step 10: Testing and Verification
+
+**Objective**: Test the deployed application and verify all components are working.
+
+**Estimated Time**: 15-20 minutes
+
+### 10.1 Testing Strategy
+
+We'll test the application in several ways:
+- **Frontend Testing**: Verify the web interface works
+- **API Testing**: Test all API endpoints
+- **Database Testing**: Verify data persistence
+- **Load Balancing Testing**: Test distribution across multiple instances
+- **Integration Testing**: Verify all components work together
+
+Let's start testing:
+
+### 10.2 Check Deployment Status
 
 ```powershell
 # Check namespace
@@ -1795,6 +2016,105 @@ curl http://localhost:8000/container-id
 3. Update name via API
 4. Refresh browser to see updated name
 
+---
+
+## Step 11: Monitoring and Metrics
+
+**Objective**: Understand how the application is monitored and how to view metrics.
+
+**Estimated Time**: 10-15 minutes
+
+### 11.1 Monitoring Overview
+
+The application includes comprehensive monitoring:
+- **Prometheus Metrics**: Application performance metrics
+- **Health Checks**: Container and application health monitoring
+- **Logs**: Application and system logs
+- **Resource Monitoring**: CPU, memory, and network usage
+
+### 11.2 Viewing Metrics
+
+```powershell
+# Check Prometheus metrics from the API
+Invoke-WebRequest -Uri "http://localhost:8000/metrics" -Method GET
+
+# Check NGINX metrics from the frontend
+Invoke-WebRequest -Uri "http://localhost:8080/metrics" -Method GET
+```
+
+### 11.3 Application Logs
+
+```powershell
+# Check API logs
+kubectl logs -n lm-webstack deployment/api-lm --tail=20
+
+# Check frontend logs
+kubectl logs -n lm-webstack deployment/frontend-lm --tail=20
+
+# Check database logs
+kubectl logs -n lm-webstack deployment/postgres-lm --tail=20
+```
+
+### 11.4 Resource Usage
+
+```powershell
+# Check pod resource usage
+kubectl top pods -n lm-webstack
+
+# Check node resource usage
+kubectl top nodes
+```
+
+---
+
+## Step 12: Load Balancing and Scaling
+
+**Objective**: Understand how load balancing works and how to scale the application.
+
+**Estimated Time**: 10-15 minutes
+
+### 12.1 Load Balancing Overview
+
+The application uses Kubernetes load balancing:
+- **Multiple API Replicas**: 3 API instances handle requests
+- **Automatic Distribution**: Requests are distributed across replicas
+- **High Availability**: If one instance fails, others continue serving
+- **Node Distribution**: Pods are distributed across multiple nodes
+
+### 12.2 Testing Load Balancing
+
+```powershell
+# Test load balancing by making multiple requests
+for ($i = 1; $i -le 10; $i++) {
+    $response = Invoke-WebRequest -Uri "http://localhost:8000/container-id" -Method GET
+    $data = $response.Content | ConvertFrom-Json
+    Write-Host "Request $i`: $($data.container_id)"
+}
+```
+
+### 12.3 Scaling the Application
+
+```powershell
+# Scale the API to 5 replicas
+kubectl scale deployment api-lm -n lm-webstack --replicas=5
+
+# Check the new deployment status
+kubectl get pods -n lm-webstack
+
+# Scale back to 3 replicas
+kubectl scale deployment api-lm -n lm-webstack --replicas=3
+```
+
+---
+
+## Step 13: Troubleshooting and Cleanup
+
+**Objective**: Learn how to troubleshoot issues and clean up resources.
+
+**Estimated Time**: 10-15 minutes
+
+### 13.1 Troubleshooting Common Issues
+
 ## Troubleshooting
 
 ### Common Issues and Solutions
@@ -1836,6 +2156,46 @@ kubectl get events -n lm-webstack --sort-by='.lastTimestamp'
 # Check service endpoints
 kubectl get endpoints -n lm-webstack
 ```
+
+### 13.2 Cleanup Resources
+
+When you're done with the application, you should clean up all resources:
+
+```powershell
+# Stop port forwarding (press Ctrl+C in terminal windows running port forwarding)
+
+# Remove all Kubernetes resources
+powershell -ExecutionPolicy Bypass -File run.ps1 clean
+
+# Stop the cluster
+powershell -ExecutionPolicy Bypass -File run.ps1 stop-cluster
+
+# Optional: Remove Docker images
+docker rmi frontend-lm:latest api-lm:latest postgres-lm:latest --force
+```
+
+**What This Does**:
+- **clean**: Removes all resources in the lm-webstack namespace
+- **stop-cluster**: Deletes the entire kind cluster
+- **docker rmi**: Removes the Docker images to free up disk space
+
+---
+
+## Summary
+
+Congratulations! You have successfully:
+
+✅ **Installed all required tools** (Docker, kubectl, kind, Git)
+✅ **Understood the project structure** and code organization
+✅ **Deployed a complete web application** with frontend, backend, and database
+✅ **Learned about containerization** with Docker
+✅ **Mastered Kubernetes orchestration** with deployments, services, and configs
+✅ **Tested load balancing** across multiple application instances
+✅ **Monitored application performance** with metrics and logs
+✅ **Scaled the application** horizontally
+✅ **Troubleshot common issues** and cleaned up resources
+
+You now have hands-on experience with modern containerized application development and deployment!
 
 ## Multi-Node Cluster and Scaling
 
