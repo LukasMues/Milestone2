@@ -52,7 +52,7 @@ A fully functional web application running on Kubernetes with:
 
 ## Table of Contents
 1. [Step 1: Install Prerequisites](#step-1-install-prerequisites)
-2. [Step 2: Clone and Explore Project Structure](#step-2-clone-and-explore-project-structure)
+2. [Step 2: Create Project Structure and Files](#step-2-create-project-structure-and-files)
 3. [Step 3: Verify Installation and Environment](#step-3-verify-installation-and-environment)
 4. [Step 4: Backend API Implementation](#step-4-backend-api-implementation)
 5. [Step 5: Database Implementation](#step-5-database-implementation)
@@ -372,30 +372,1039 @@ If all these tests pass, you're ready to proceed to the next section!
 
 ---
 
-## Step 2: Clone and Explore Project Structure
+## Step 2: Create Project Structure and Files
 
-**Objective**: Get the project files and understand the project organization.
+**Objective**: Create the complete project structure and all necessary files from scratch.
 
-**Estimated Time**: 5-10 minutes
+**Estimated Time**: 15-20 minutes
 
-### 2.1 Clone the Project Repository
+### 2.1 Create Project Directory Structure
 
-Now you need to get the project files onto your computer.
+Since you cannot clone the repository, you'll create the entire project structure manually. This is actually a great way to understand how the project is organized!
 
-#### Clone the Repository
+#### Create the Main Project Directory
 ```powershell
 # Navigate to where you want to store the project
 cd C:\Users\$env:USERNAME\Desktop
 
-# Clone the repository (replace with your actual repository URL)
-git clone <your-repository-url>
+# Create the main project directory
+mkdir Milestone2
 cd Milestone2
+
+# Create all the subdirectories
+mkdir api
+mkdir db
+mkdir frontend
+mkdir k8s
+mkdir scripts
 ```
 
 **What This Does**:
 - `cd`: Changes directory to Desktop
-- `git clone`: Downloads the project files from the repository
-- `cd Milestone2`: Enters the project directory
+- `mkdir`: Creates new directories
+- `api`: Will contain the FastAPI backend application
+- `db`: Will contain the PostgreSQL database configuration
+- `frontend`: Will contain the NGINX frontend and static files
+- `k8s`: Will contain Kubernetes configuration files
+- `scripts`: Will contain automation scripts
+
+#### Verify Directory Structure
+```powershell
+# List all directories to verify they were created
+ls
+```
+
+**Expected Output**:
+```
+    Directory: C:\Users\YourUsername\Desktop\Milestone2
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        8/24/2025   8:50 PM                api
+d-----        8/24/2025   8:50 PM                db
+d-----        8/24/2025   8:50 PM                frontend
+d-----        8/24/2025   8:50 PM                k8s
+d-----        8/24/2025   8:50 PM                scripts
+```
+
+### 2.2 Create All Project Files
+
+Now you'll create every single file needed for the project. We'll go through each file systematically.
+
+#### Create the Main README.md File
+```powershell
+# Create the main README file
+@"
+# Milestone 2: Kubernetes Web Application
+
+A complete web application stack running on Kubernetes with:
+- FastAPI backend API
+- PostgreSQL database
+- NGINX frontend
+- Prometheus monitoring
+- Load balancing and scaling
+
+## Quick Start
+\`\`\`powershell
+.\run.ps1 all
+\`\`\`
+
+## Access the Application
+- Frontend: http://localhost:8080
+- API: http://localhost:8000
+- Metrics: http://localhost:8000/metrics
+"@ | Out-File -FilePath "README.md" -Encoding UTF8
+```
+
+#### Create the Main PowerShell Script (run.ps1)
+```powershell
+# Create the main automation script
+@"
+# Milestone 2: Kubernetes Deployment Script
+
+param(
+    [Parameter(Position=0)]
+    [string]\`$Command = "help"
+)
+
+function Show-Help {
+    Write-Host "Available commands:" -ForegroundColor Green
+    Write-Host "  all              - Deploy everything (cluster, images, services)"
+    Write-Host "  clean            - Clean up everything (delete cluster, images)"
+    Write-Host "  stop-cluster     - Stop the Kubernetes cluster"
+    Write-Host "  access-frontend  - Port forward to frontend"
+    Write-Host "  access-api       - Port forward to API"
+    Write-Host "  help             - Show this help message"
+}
+
+function New-KubernetesCluster {
+    Write-Host "Creating Kubernetes cluster..." -ForegroundColor Yellow
+    & "\`$env:USERPROFILE\tools\kind.exe" create cluster --name lm-cluster
+}
+
+function Build-DockerImages {
+    Write-Host "Building Docker images..." -ForegroundColor Yellow
+    
+    # Build API image
+    docker build -t api-lm:latest ./api
+    
+    # Build frontend image
+    docker build -t frontend-lm:latest ./frontend
+    
+    # Build database image
+    docker build -t db-lm:latest ./db
+}
+
+function Load-ImagesToCluster {
+    Write-Host "Loading images to cluster..." -ForegroundColor Yellow
+    & "\`$env:USERPROFILE\tools\kind.exe" load docker-image api-lm:latest --name lm-cluster
+    & "\`$env:USERPROFILE\tools\kind.exe" load docker-image frontend-lm:latest --name lm-cluster
+    & "\`$env:USERPROFILE\tools\kind.exe" load docker-image db-lm:latest --name lm-cluster
+}
+
+function Deploy-KubernetesResources {
+    Write-Host "Deploying Kubernetes resources..." -ForegroundColor Yellow
+    kubectl apply -f ./k8s/
+}
+
+function Start-PortForwarding {
+    Write-Host "Starting port forwarding..." -ForegroundColor Yellow
+    kubectl port-forward service/frontend-lm 8080:80 &
+    kubectl port-forward service/api-lm 8000:8000 &
+}
+
+function Stop-Cluster {
+    Write-Host "Stopping Kubernetes cluster..." -ForegroundColor Yellow
+    & "\`$env:USERPROFILE\tools\kind.exe" delete cluster --name lm-cluster
+}
+
+function Clean-Everything {
+    Write-Host "Cleaning up everything..." -ForegroundColor Yellow
+    Stop-Cluster
+    docker rmi api-lm:latest frontend-lm:latest db-lm:latest 2>\`$null
+}
+
+function Access-Frontend {
+    Write-Host "Accessing frontend..." -ForegroundColor Yellow
+    kubectl port-forward service/frontend-lm 8080:80
+}
+
+function Access-API {
+    Write-Host "Accessing API..." -ForegroundColor Yellow
+    kubectl port-forward service/api-lm 8000:8000
+}
+
+# Main execution
+switch (\`$Command.ToLower()) {
+    "all" {
+        New-KubernetesCluster
+        Build-DockerImages
+        Load-ImagesToCluster
+        Deploy-KubernetesResources
+        Start-PortForwarding
+        Write-Host "`nDeployment complete!" -ForegroundColor Green
+        Write-Host "Frontend: http://localhost:8080" -ForegroundColor Cyan
+        Write-Host "API: http://localhost:8000" -ForegroundColor Cyan
+    }
+    "clean" { Clean-Everything }
+    "stop-cluster" { Stop-Cluster }
+    "access-frontend" { Access-Frontend }
+    "access-api" { Access-API }
+    default { Show-Help }
+}
+"@ | Out-File -FilePath "run.ps1" -Encoding UTF8
+```
+
+### 2.3 Create API Files
+
+#### Create API Requirements File
+```powershell
+# Create the Python requirements file for the API
+@"
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
+python-multipart==0.0.6
+prometheus-client==0.19.0
+"@ | Out-File -FilePath "api\requirements.txt" -Encoding UTF8
+```
+
+#### Create API Dockerfile
+```powershell
+# Create the Dockerfile for the API
+@"
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+COPY db.py .
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+"@ | Out-File -FilePath "api\Dockerfile" -Encoding UTF8
+```
+
+#### Create API Main Application File
+```powershell
+# Create the main FastAPI application file
+@"
+import os
+import socket
+import time
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from db import get_db_connection, init_database, get_user_name, update_user_name
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+
+# Initialize FastAPI app
+app = FastAPI(title="Milestone 2 API", version="1.0.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Pydantic model for user updates
+class UserUpdate(BaseModel):
+    name: str
+
+# Prometheus metrics
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint'])
+REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency')
+USER_OPERATIONS = Counter('user_operations_total', 'Total user operations', ['operation'])
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup with retry logic"""
+    max_retries = 5
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            init_database()
+            print("Database initialized successfully")
+            break
+        except Exception as e:
+            print(f"Database initialization attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                print("Failed to initialize database after all retries")
+
+@app.get("/user")
+async def get_user():
+    """Get current user information"""
+    REQUEST_COUNT.labels(method='GET', endpoint='/user').inc()
+    USER_OPERATIONS.labels(operation='get').inc()
+    
+    try:
+        with get_db_connection() as conn:
+            name = get_user_name(conn)
+            return {"name": name, "message": "User retrieved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/user")
+async def update_user(user_update: UserUpdate):
+    """Update user information"""
+    REQUEST_COUNT.labels(method='POST', endpoint='/user').inc()
+    USER_OPERATIONS.labels(operation='update').inc()
+    
+    try:
+        with get_db_connection() as conn:
+            update_user_name(conn, user_update.name)
+            return {"message": "User updated successfully", "name": user_update.name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/container-id")
+async def get_container_id():
+    """Get container hostname for load balancing verification"""
+    REQUEST_COUNT.labels(method='GET', endpoint='/container-id').inc()
+    return {"container_id": socket.gethostname()}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    REQUEST_COUNT.labels(method='GET', endpoint='/health').inc()
+    return {"status": "healthy", "timestamp": time.time()}
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    REQUEST_COUNT.labels(method='GET', endpoint='/').inc()
+    return {"message": "Milestone 2 API is running", "version": "1.0.0"}
+
+@app.get("/node-info")
+async def get_node_info():
+    """Get node information for debugging"""
+    REQUEST_COUNT.labels(method='GET', endpoint='/node-info').inc()
+    return {
+        "hostname": socket.gethostname(),
+        "environment": os.getenv("ENVIRONMENT", "development")
+    }
+
+# Prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# Middleware for automatic metric collection
+@app.middleware("http")
+async def metrics_middleware(request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    REQUEST_LATENCY.observe(time.time() - start_time)
+    return response
+"@ | Out-File -FilePath "api\app.py" -Encoding UTF8
+```
+
+#### Create API Database Module
+```powershell
+# Create the database connection and operations module
+@"
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from contextlib import contextmanager
+
+# Database configuration from environment variables
+DB_HOST = os.getenv('DB_HOST', 'db-lm')
+DB_PORT = os.getenv('DB_PORT', '5432')
+DB_NAME = os.getenv('DB_NAME', 'milestone2')
+DB_USER = os.getenv('DB_USER', 'postgres')
+DB_PASSWORD = os.getenv('DB_PASSWORD', 'password')
+
+@contextmanager
+def get_db_connection():
+    """Context manager for database connections"""
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+        yield conn
+    finally:
+        if conn:
+            conn.close()
+
+def init_database():
+    """Initialize database tables and default data"""
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            # Create users table
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Insert default user if not exists
+            cur.execute('''
+                INSERT INTO users (name) VALUES ('Default User') 
+                ON CONFLICT DO NOTHING
+            ''')
+            
+            conn.commit()
+
+def get_user_name(conn):
+    """Get the current user name from database"""
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute('SELECT name FROM users ORDER BY id LIMIT 1')
+        result = cur.fetchone()
+        return result['name'] if result else 'Unknown User'
+
+def update_user_name(conn, new_name):
+    """Update the user name in database"""
+    with conn.cursor() as cur:
+        cur.execute('''
+            UPDATE users 
+            SET name = %s, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = (SELECT id FROM users ORDER BY id LIMIT 1)
+        ''', (new_name,))
+        conn.commit()
+"@ | Out-File -FilePath "api\db.py" -Encoding UTF8
+```
+
+### 2.4 Create Database Files
+
+#### Create Database Dockerfile
+```powershell
+# Create the Dockerfile for the PostgreSQL database
+@"
+FROM postgres:15-alpine
+
+COPY init.sql /docker-entrypoint-initdb.d/
+
+ENV POSTGRES_DB=milestone2
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=password
+
+EXPOSE 5432
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD pg_isready -U postgres -d milestone2 || exit 1
+"@ | Out-File -FilePath "db\Dockerfile" -Encoding UTF8
+```
+
+#### Create Database Initialization Script
+```powershell
+# Create the SQL initialization script for the database
+@"
+-- Initialize database schema
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default user if not exists
+INSERT INTO users (name) VALUES ('Default User') ON CONFLICT DO NOTHING;
+"@ | Out-File -FilePath "db\init.sql" -Encoding UTF8
+```
+
+### 2.5 Create Frontend Files
+
+#### Create Frontend Dockerfile
+```powershell
+# Create the Dockerfile for the NGINX frontend
+@"
+FROM nginx:alpine
+
+RUN apk add --no-cache curl
+
+COPY index.html /usr/share/nginx/html/index.html
+COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+"@ | Out-File -FilePath "frontend\Dockerfile" -Encoding UTF8
+```
+
+#### Create Frontend HTML File
+```powershell
+# Create the main HTML file for the frontend
+@"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone 2 - Kubernetes Web Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .info {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffe7e7;
+            color: #d32f2f;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Milestone 2: Kubernetes Web Application</h1>
+        
+        <div class="section">
+            <h2>👤 User Information</h2>
+            <div id="userInfo">Loading...</div>
+            <button onclick="fetchUserData()">Refresh User Data</button>
+        </div>
+
+        <div class="section">
+            <h2>🔄 Container Information</h2>
+            <div id="containerInfo">Loading...</div>
+            <button onclick="fetchContainerId()">Get Container ID</button>
+        </div>
+
+        <div class="section">
+            <h2>⚡ Load Balancing Test</h2>
+            <p>Test load balancing by making multiple requests:</p>
+            <button onclick="testLoadBalancing()">Test Load Balancing</button>
+            <div id="loadBalancingResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 System Status</h2>
+            <div id="systemStatus">Loading...</div>
+            <button onclick="refreshData()">Refresh All Data</button>
+        </div>
+    </div>
+
+    <script>
+        // Fetch user data from API
+        async function fetchUserData() {
+            try {
+                const response = await fetch('/api/user');
+                const data = await response.json();
+                document.getElementById('userInfo').innerHTML = \`
+                    <div class="info">
+                        <strong>Name:</strong> \${data.name}<br>
+                        <strong>Message:</strong> \${data.message}
+                    </div>
+                \`;
+            } catch (error) {
+                document.getElementById('userInfo').innerHTML = \`
+                    <div class="error">Error: \${error.message}</div>
+                \`;
+            }
+        }
+
+        // Fetch container ID for load balancing verification
+        async function fetchContainerId() {
+            try {
+                const response = await fetch('/api/container-id');
+                const data = await response.json();
+                document.getElementById('containerInfo').innerHTML = \`
+                    <div class="info">
+                        <strong>Container ID:</strong> \${data.container_id}
+                    </div>
+                \`;
+            } catch (error) {
+                document.getElementById('containerInfo').innerHTML = \`
+                    <div class="error">Error: \${error.message}</div>
+                \`;
+            }
+        }
+
+        // Refresh all data
+        async function refreshData() {
+            await fetchUserData();
+            await fetchContainerId();
+            document.getElementById('systemStatus').innerHTML = \`
+                <div class="info">
+                    <strong>Status:</strong> All systems operational<br>
+                    <strong>Last Updated:</strong> \${new Date().toLocaleString()}
+                </div>
+            \`;
+        }
+
+        // Test load balancing by making multiple requests
+        async function testLoadBalancing() {
+            const results = [];
+            const containerIds = new Set();
+            
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch('/api/container-id');
+                    const data = await response.json();
+                    containerIds.add(data.container_id);
+                    results.push(\`Request \${i + 1}: \${data.container_id}\`);
+                } catch (error) {
+                    results.push(\`Request \${i + 1}: Error - \${error.message}\`);
+                }
+            }
+            
+            const loadBalancingResults = document.getElementById('loadBalancingResults');
+            loadBalancingResults.innerHTML = \`
+                <div class="info">
+                    <strong>Load Balancing Test Results:</strong><br>
+                    \${results.join('<br>')}<br><br>
+                    <strong>Unique Containers:</strong> \${containerIds.size} (Load balancing is \${containerIds.size > 1 ? 'working' : 'not working'})
+                </div>
+            \`;
+        }
+
+        // Load initial data
+        window.onload = function() {
+            refreshData();
+        };
+    </script>
+</body>
+</html>
+"@ | Out-File -FilePath "frontend\index.html" -Encoding UTF8
+```
+
+#### Create Frontend NGINX Configuration
+```powershell
+# Create the NGINX configuration file
+@"
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    # Logging format
+    log_format main '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                    '\$status \$body_bytes_sent "\$http_referer" '
+                    '"\$http_user_agent" "\$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+    error_log /var/log/nginx/error.log;
+
+    # Performance settings
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Serve static files
+        location / {
+            try_files \$uri \$uri/ /index.html;
+        }
+
+        # Proxy API requests to FastAPI service
+        location /api/ {
+            proxy_pass http://api-lm:8000/;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
+
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+
+        # Prometheus metrics endpoint
+        location /metrics {
+            stub_status on;
+            access_log off;
+        }
+    }
+}
+"@ | Out-File -FilePath "frontend\nginx.conf" -Encoding UTF8
+```
+
+### 2.6 Create Kubernetes Configuration Files
+
+#### Create Kubernetes Namespace
+```powershell
+# Create the Kubernetes namespace configuration
+@"
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: milestone2
+  labels:
+    name: milestone2
+"@ | Out-File -FilePath "k8s\namespace.yaml" -Encoding UTF8
+```
+
+#### Create Database Deployment and Service
+```powershell
+# Create the database deployment and service configuration
+@"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-lm
+  namespace: milestone2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-lm
+  template:
+    metadata:
+      labels:
+        app: db-lm
+    spec:
+      containers:
+      - name: postgres
+        image: db-lm:latest
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "milestone2"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "password"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-lm
+  namespace: milestone2
+spec:
+  selector:
+    app: db-lm
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+  type: ClusterIP
+"@ | Out-File -FilePath "k8s\db-deployment.yaml" -Encoding UTF8
+```
+
+#### Create API Deployment and Service
+```powershell
+# Create the API deployment and service configuration
+@"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-lm
+  namespace: milestone2
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-lm
+  template:
+    metadata:
+      labels:
+        app: api-lm
+    spec:
+      containers:
+      - name: api
+        image: api-lm:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          value: "db-lm"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "milestone2"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_PASSWORD
+          value: "password"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-lm
+  namespace: milestone2
+spec:
+  selector:
+    app: api-lm
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
+  type: ClusterIP
+"@ | Out-File -FilePath "k8s\api-deployment.yaml" -Encoding UTF8
+```
+
+#### Create Frontend Deployment and Service
+```powershell
+# Create the frontend deployment and service configuration
+@"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-lm
+  namespace: milestone2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-lm
+  template:
+    metadata:
+      labels:
+        app: frontend-lm
+    spec:
+      containers:
+      - name: nginx
+        image: frontend-lm:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-lm
+  namespace: milestone2
+spec:
+  selector:
+    app: frontend-lm
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+"@ | Out-File -FilePath "k8s\frontend-deployment.yaml" -Encoding UTF8
+```
+
+### 2.7 Verify All Files Were Created
+
+```powershell
+# Verify all files and directories were created correctly
+Write-Host "=== Project Structure Verification ===" -ForegroundColor Green
+
+# Check main directory
+Write-Host "`nMain directory:" -ForegroundColor Yellow
+ls
+
+# Check API directory
+Write-Host "`nAPI directory:" -ForegroundColor Yellow
+ls api
+
+# Check DB directory
+Write-Host "`nDB directory:" -ForegroundColor Yellow
+ls db
+
+# Check Frontend directory
+Write-Host "`nFrontend directory:" -ForegroundColor Yellow
+ls frontend
+
+# Check K8s directory
+Write-Host "`nKubernetes directory:" -ForegroundColor Yellow
+ls k8s
+
+# Check Scripts directory
+Write-Host "`nScripts directory:" -ForegroundColor Yellow
+ls scripts
+```
+
+**Expected Output**:
+```
+=== Project Structure Verification ===
+
+Main directory:
+    Directory: C:\Users\YourUsername\Desktop\Milestone2
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        8/24/2025   8:50 PM                api
+d-----        8/24/2025   8:50 PM                db
+d-----        8/24/2025   8:50 PM                frontend
+d-----        8/24/2025   8:50 PM                k8s
+d-----        8/24/2025   8:50 PM                scripts
+-a----        8/24/2025   8:50 PM           1,234 README.md
+-a----        8/24/2025   8:50 PM           5,678 run.ps1
+
+API directory:
+    Directory: C:\Users\YourUsername\Desktop\Milestone2\api
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        8/24/2025   8:50 PM           2,345 app.py
+-a----        8/24/2025   8:50 PM           1,234 db.py
+-a----        8/24/2025   8:50 PM             567 Dockerfile
+-a----        8/24/2025   8:50 PM             234 requirements.txt
+
+DB directory:
+    Directory: C:\Users\YourUsername\Desktop\Milestone2\db
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        8/24/2025   8:50 PM             345 Dockerfile
+-a----        8/24/2025   8:50 PM             234 init.sql
+
+Frontend directory:
+    Directory: C:\Users\YourUsername\Desktop\Milestone2\frontend
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        8/24/2025   8:50 PM           3,456 Dockerfile
+-a----        8/24/2025   8:50 PM           4,567 index.html
+-a----        8/24/2025   8:50 PM           2,345 nginx.conf
+
+Kubernetes directory:
+    Directory: C:\Users\YourUsername\Desktop\Milestone2\k8s
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        8/24/2025   8:50 PM             234 api-deployment.yaml
+-a----        8/24/2025   8:50 PM             345 db-deployment.yaml
+-a----        8/24/2025   8:50 PM             234 frontend-deployment.yaml
+-a----        8/24/2025   8:50 PM             123 namespace.yaml
+
+Scripts directory:
+    Directory: C:\Users\YourUsername\Desktop\Milestone2\scripts
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+```
+
+**What This Verifies**:
+- All directories were created successfully
+- All necessary files were created with proper content
+- File sizes are reasonable (not empty)
+- Project structure matches the expected layout
 
 ## Project Structure
 
@@ -1265,6 +2274,7 @@ http {
     tcp_nodelay on;                 # Disable Nagle's algorithm
     keepalive_timeout 65;           # Keep connections alive for 65 seconds
     types_hash_max_size 2048;       # Maximum size of types hash table
+}
 ```
 
 **Line-by-Line Explanation:**
